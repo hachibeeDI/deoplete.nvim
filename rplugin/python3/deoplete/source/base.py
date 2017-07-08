@@ -5,7 +5,13 @@
 # ============================================================================
 
 import re
+from typing import (
+    Any,
+    List,
+    Union,
+)
 from abc import abstractmethod
+
 from deoplete.logger import LoggingMixin
 from deoplete.util import debug
 
@@ -33,7 +39,7 @@ class Base(LoggingMixin):
         self.disabled_syntaxes = []
         self.limit = 0
 
-    def get_complete_position(self, context):
+    def get_complete_position(self, context) -> int:
         m = re.search('(?:' + context['keyword_patterns'] + ')$',
                       context['input'])
         return m.start() if m else -1
@@ -42,7 +48,7 @@ class Base(LoggingMixin):
         debug(self.vim, expr)
 
     @abstractmethod
-    def gather_candidate(self, context):
+    def gather_candidate(self, context) -> List[Union[str, Any]]:
         pass
 
     def on_event(self, context):

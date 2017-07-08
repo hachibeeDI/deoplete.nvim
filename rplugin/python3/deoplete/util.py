@@ -10,6 +10,12 @@ import sys
 import glob
 import traceback
 import unicodedata
+from typing import (
+    Any,
+    List,
+    Dict,
+    Union,
+)
 
 from importlib.machinery import SourceFileLoader
 
@@ -47,7 +53,8 @@ def convert2list(expr):
     return (expr if isinstance(expr, list) else [expr])
 
 
-def convert2candidates(l):
+def convert2candidates(
+        l: List[Union[str, Any]]) -> List[Union[Dict[str, str], Any]]:
     return [{'word': x} for x in l] if l and isinstance(l[0], str) else l
 
 
