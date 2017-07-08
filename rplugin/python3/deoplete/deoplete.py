@@ -7,13 +7,14 @@ import re
 import copy
 import time
 import os.path
-
+from typing import (Set, Any, Dict, List, Tuple, Iterable,)  # noqa
 from collections import defaultdict
 
 import deoplete.util  # noqa
 import deoplete.filter  # noqa
 import deoplete.source  # noqa
 
+from deoplete.source.base import Base
 from deoplete import logger
 from deoplete.exceptions import SourceInitError
 from deoplete.util import (bytepos2charpos, charpos2bytepos, error, error_tb,
@@ -76,7 +77,7 @@ class Deoplete(logger.LoggingMixin):
             'input': context['input'],
         }
 
-    def gather_results(self, context):
+    def gather_results(self, context) -> Iterable[Dict[str, Any]]:
         results = []
 
         for source in [x[1] for x in self.itersource(context)]:
@@ -151,11 +152,15 @@ class Deoplete(logger.LoggingMixin):
 
         return results
 
-    def merge_results(self, results, context_input):
-        merged_results = []
-        all_candidates = []
-        for result in [x for x in results
-                       if not self.is_skip(x['context'], x['source'])]:
+    def merge_results(
+            self,
+            results: Iterable[Dict[str, Any]],
+            context_input: str) -> Tuple[bool, int, Iterable[Any]]:
+
+        merged_results = []  # type: List[Tuple[list, dict]]
+        all_candidates = []  # type: List[Any]
+        for result in (x for x in results
+                       if not self.is_skip(x['context'], x['source'])):
             source = result['source']
 
             # Gather async results
@@ -212,7 +217,7 @@ class Deoplete(logger.LoggingMixin):
                 context['candidates'] = source.on_post_filter(context)
 
             if context['candidates']:
-                merged_results.append([context['candidates'], result])
+                merged_results.append((context['candidates'], result))
 
         is_async = len([x for x in results if x['context']['is_async']]) > 0
 
@@ -222,7 +227,7 @@ class Deoplete(logger.LoggingMixin):
         complete_position = min([x[1]['context']['complete_position']
                                  for x in merged_results])
 
-        for [candidates, result] in merged_results:
+        for candidates, result in merged_results:
             context = result['context']
             source = result['source']
             prefix = context['input'][
@@ -246,18 +251,18 @@ class Deoplete(logger.LoggingMixin):
         # self.debug(candidates)
         if context['vars']['deoplete#max_list'] > 0:
             all_candidates = all_candidates[
-                : context['vars']['deoplete#max_list']]
+                :context['vars']['deoplete#max_list']]
 
         return (is_async, complete_position, all_candidates)
 
-    def itersource(self, context):
+    def itersource(self, context) -> Iterable[Tuple[str, Base]]:
         sources = sorted(self._sources.items(),
                          key=lambda x: get_custom(
                              context['custom'],
                              x[1].name, 'rank', x[1].rank),
                          reverse=True)
         filetypes = context['filetypes']
-        ignore_sources = set()
+        ignore_sources = set()  # type: Set[str]
         for ft in filetypes:
             ignore_sources.update(
                 get_buffer_config(context, ft,
@@ -416,7 +421,7 @@ class Deoplete(logger.LoggingMixin):
                 (not result['source'].is_volatile or
                  context['input'].find(result['prev_input']) == 0))
 
-    def is_skip(self, context, source):
+    def is_skip(self, context, source) -> bool:
         if 'syntax_names' in context and source.disabled_syntaxes:
             p = re.compile('(' + '|'.join(source.disabled_syntaxes) + ')$')
             if next(filter(p.search, context['syntax_names']), None):
